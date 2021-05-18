@@ -283,6 +283,8 @@ class Properties<T:Model<T>> {
 			value.dom = cast (p = new Properties<T>(value, cast c));
 		if( attributes != null )
 			p.initAttributes(attributes);
+
+		p.setAttribute("parsed", VIdent("true"));
 		return p;
 	}
 
