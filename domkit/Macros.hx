@@ -644,7 +644,7 @@ class Macros {
 
 	#end
 
-	public static macro function bindVar(e : haxe.macro.Expr) : haxe.macro.Expr {
+	public static dynamic macro function bindVar(e : haxe.macro.Expr) : haxe.macro.Expr {
 		switch(Context.typeof(e)) {
 			case TInst(_):
 				return e;
