@@ -30,6 +30,10 @@ class Macros {
 	public static dynamic function processMacro( id : String, args : Null<Array<haxe.macro.Expr>>, pos : haxe.macro.Expr.Position ) : MarkupParser.Markup {
 		return null;
 	}
+	
+	public static dynamic function processBind( e : haxe.macro.Expr ) : haxe.macro.Expr {
+		return null;
+	}
 
 	public static function registerComponentsPath( path : String ) {
 		if( componentsSearchPath.indexOf(path) < 0 )
@@ -126,12 +130,10 @@ class Macros {
 					return;
 				case EConst(CIdent(name)) if(isBound):
 					var b = macro domkit.Macros.bindVar($i{name});
-					//e.expr = b.expr;
 					bindExprs.push(b);
 					return;
 				case EField(obj, name) if(isBound):
 					var b = macro domkit.Macros.bindVar($obj.$name);
-					//e.expr = b.expr;
 					bindExprs.push(b);
 					return;
 				default:
@@ -681,47 +683,5 @@ class Macros {
 
 	public static macro function bindVar(e : haxe.macro.Expr) : haxe.macro.Expr {
 		return processBind(e);
-
-		/*
-		switch(Context.typeof(e)) {
-			case TInst(_):
-				return e;
-			case TFun(args,ret):
-				if(args.length == 1) {
-					function matchCallback(t:Type) {
-						return switch(t) {
-							// Void->Void callback
-							case TFun([], TAbstract(_.get() => {module: "StdTypes", name: "Void"}, [])):
-								return macro {
-									$e(__onVarChanged);
-								};
-							// (newValue:T)->Void callback
-							case TFun([{ t : argType }], TAbstract(_.get() => {module: "StdTypes", name: "Void"}, [])) if (Context.unify(argType,ret)):
-								return macro {
-									$e(v -> __onVarChanged());
-								};
-							// (newValue:T, oldValue:T)->Void callback
-							case TFun([{ t : argType }, { t : arg2Type }], TAbstract(_.get() => {module: "StdTypes", name: "Void"}, [])) if (Context.unify(argType,ret) && Context.unify(arg2Type,ret)):
-								return macro {
-									$e((v1,v2) -> __onVarChanged());
-								};
-							default: null;
-						}
-					}
-					var t = args[0].t;
-					var expr = switch(t) {
-						case TAbstract(_,[func]):
-							matchCallback(func);
-						default:
-							matchCallback(t);
-					};
-					if(expr != null)
-						return expr;
-				}
-			default:
-		}
-		throw "Unsupported callback type used with @bind";
-		*/
 	}
-
 }
