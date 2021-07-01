@@ -110,6 +110,7 @@ class Macros {
 	static function remapBind( rootExpr : haxe.macro.Expr ) {
 		var isBound = false;
 		var bname:String = null;
+		var bindExprs:Array<haxe.macro.Expr> = [];
 		function _remap(e : haxe.macro.Expr) {
 			switch( e.expr ) {
 				case EMeta(m, group) if( m.name == "bind" ):
@@ -124,10 +125,14 @@ class Macros {
 					e.expr = group.expr;
 					return;
 				case EConst(CIdent(name)) if(isBound):
-					e.expr = ((macro domkit.Macros.bindVar($i{name})).expr); 
+					var b = macro domkit.Macros.bindVar($i{name});
+					//e.expr = b.expr;
+					bindExprs.push(b);
 					return;
 				case EField(obj, name) if(isBound):
-					e.expr = ((macro domkit.Macros.bindVar($obj.$name)).expr); 
+					var b = macro domkit.Macros.bindVar($obj.$name);
+					//e.expr = b.expr;
+					bindExprs.push(b);
 					return;
 				default:
 			}
@@ -136,7 +141,8 @@ class Macros {
 		_remap(rootExpr);
 		return {
 			isBound: isBound,
-			name: bname
+			name: bname,
+			exprs: bindExprs
 		};
 	}
 	
@@ -306,6 +312,7 @@ class Macros {
 								@:privateAccess $setter;
 								@:privateAccess tmp.initStyle($v{p.name},$eattrib);
 							}
+							$b{binding.exprs};
 							$e{
 								if(binding.isBound)
 									macro registerBind(__onVarChanged, $v{binding.name})
@@ -395,8 +402,31 @@ class Macros {
 				replaceThis(e, ethis);
 
 			if( m.condition != null ) {
-				remapBuild(m.condition.cond);
-				return macro if( ${m.condition.cond} ) $b{exprs};
+				//remapBuild(m.condition.cond);
+				var binding = remapBind(m.condition.cond);
+				if(binding.isBound) {
+					return macro {
+						function __onVarChanged() {
+							trace("Rebuild conditional block");
+							#if domkit_heaps
+							tmp.obj.removeChildren();
+							trace("Removed from parent");
+							#end
+							var cond = (${m.condition.cond});
+							trace("Condition is: " + (cond ? "TRUE" : "FALSE"));
+							if( ${m.condition.cond} ) $b{exprs};
+						}
+						$b{binding.exprs};
+						$e{
+							if(binding.isBound)
+								macro registerBind(__onVarChanged, $v{binding.name})
+							else macro {}
+						}
+						__onVarChanged();
+					};
+				} else {
+					return macro if( ${m.condition.cond} ) $b{exprs};
+				}
 			}
 			return macro $b{exprs};
 		case Text(text):
@@ -644,7 +674,15 @@ class Macros {
 
 	#end
 
-	public static dynamic macro function bindVar(e : haxe.macro.Expr) : haxe.macro.Expr {
+
+	public static dynamic function processBind(e : haxe.macro.Expr) : haxe.macro.Expr {
+		return e;
+	}
+
+	public static macro function bindVar(e : haxe.macro.Expr) : haxe.macro.Expr {
+		return processBind(e);
+
+		/*
 		switch(Context.typeof(e)) {
 			case TInst(_):
 				return e;
@@ -683,6 +721,7 @@ class Macros {
 			default:
 		}
 		throw "Unsupported callback type used with @bind";
+		*/
 	}
 
 }
