@@ -676,11 +676,6 @@ class Macros {
 
 	#end
 
-
-	public static dynamic function processBind(e : haxe.macro.Expr) : haxe.macro.Expr {
-		return e;
-	}
-
 	public static macro function bindVar(e : haxe.macro.Expr) : haxe.macro.Expr {
 		return processBind(e);
 	}
